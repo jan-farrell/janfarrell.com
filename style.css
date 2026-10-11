@@ -162,6 +162,22 @@ h2.lead {
   color: var(--ink);
 }
 
+/* the one button on the site: newsletter */
+.button {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--link);
+  border-radius: 2px;
+  color: var(--link);
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.button:hover {
+  background: var(--link);
+  color: var(--paper);
+}
+
 hr {
   border: none;
   border-top: 1px solid var(--rule);
