@@ -1,0 +1,6 @@
+# GitHub Pages (Jekyll) build settings for janfarrell.com.
+# The finance/ directory holds tooling, not site content. Keep it out of the
+# published site. Financial data itself is never committed (see finance/.gitignore).
+exclude:
+  - finance/
+  - README.md

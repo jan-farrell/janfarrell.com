@@ -1,0 +1,13 @@
+# Financial data never enters this repository. The repo is public (GitHub Pages).
+data/
+*.sqlite
+*.sqlite3
+*.db
+*.csv
+*.xlsx
+*.pdf
+*.html
+!docs/*.html
+.env
+__pycache__/
+*.pyc

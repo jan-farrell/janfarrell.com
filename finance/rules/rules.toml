@@ -1,0 +1,503 @@
+# Seed data and classification rules. Edit this file, then run `fin.py init`
+# again: entities, accounts and counterparties are upserted, rules are replaced.
+# No amounts or account numbers belong here. This file is committed.
+
+# ---------------------------------------------------------------- entities
+[[entity]]
+code = "JAN"
+name = "Jan Farrell (personal)"
+kind = "person"
+country = "ES"
+home_currency = "EUR"
+
+[[entity]]
+code = "BRETHIL"
+name = "Brethil Investment S.L.U."
+kind = "company"
+country = "ES"
+notes = "Personal holding: investments, the Francis Bacon Debate Society's costs, Society invoices to SquareTrade."
+
+[[entity]]
+code = "FARRELL_IMPORT"
+name = "Farrell Import S.L."
+kind = "company"
+country = "ES"
+notes = "Work company. Monthly fee plus expenses invoiced to Square Trade Limited at 0% VAT. Events, technology and consulting."
+
+[[entity]]
+code = "LIBERALIA"
+name = "Liberalia Assistance S.L."
+kind = "company"
+country = "ES"
+notes = "Operating business. Its own books are kept by Vanesa; costs appear here only to keep them out of Jan's burn rate."
+
+[[entity]]
+code = "FIXEA"
+name = "Fixea"
+kind = "company"
+country = "ES"
+
+[[entity]]
+code = "13LTD"
+name = "13 Limited (Hong Kong, dormant)"
+kind = "company"
+country = "HK"
+home_currency = "HKD"
+
+[[entity]]
+code = "MENAKO"
+name = "Menako Capital / Menako Partners S.L."
+kind = "company"
+country = "ES"
+notes = "Private equity vehicle with partners. Not Jan's personal burn."
+
+[[entity]]
+code = "SQUARETRADE"
+name = "Square Trade Limited"
+kind = "client"
+country = "GB"
+tax_id = "GB 215332445"
+notes = "Client of Farrell Import (monthly fee and expenses, approver Kevin Gillan) and, from October 2026, of Brethil for Society evenings by pre-agreed invoice."
+
+[[entity]]
+code = "FUNDACION_IE"
+name = "Fundación IE"
+kind = "client"
+country = "ES"
+
+# ---------------------------------------------------------------- accounts
+# Add iban_last4 locally if useful; never full numbers.
+[[account]]
+code = "AMEX_JAN"
+entity = "JAN"
+provider = "American Express"
+kind = "card"
+currency = "EUR"
+feed = "csv"
+notes = "Statement CSV export from the Amex web app. Open Banking feed is the target."
+
+[[account]]
+code = "CAIXA_FARRELL_IMPORT"
+entity = "FARRELL_IMPORT"
+provider = "CaixaBank"
+kind = "bank"
+currency = "EUR"
+feed = "csv"
+notes = "Receives SquareTrade payments. CSV export from CaixaBankNow."
+
+[[account]]
+code = "REVOLUT_BUSINESS"
+entity = "BRETHIL"
+provider = "Revolut Business"
+kind = "bank"
+currency = "EUR"
+feed = "api"
+notes = "Revolut Business has an official API with transaction history."
+
+[[account]]
+code = "WISE_BUSINESS"
+entity = "BRETHIL"
+provider = "Wise Business"
+kind = "wallet"
+currency = "EUR"
+feed = "api"
+
+[[account]]
+code = "CURVE"
+entity = "JAN"
+provider = "Curve"
+kind = "card"
+currency = "EUR"
+feed = "email"
+
+[[account]]
+code = "AMEX_LIBERALIA_75008"
+entity = "LIBERALIA"
+provider = "American Express"
+kind = "card"
+currency = "EUR"
+feed = "manual"
+notes = "Liberalia card; statements forwarded by Rosa Vilas. Not Jan's burn."
+
+# ---------------------------------------------------------------- counterparties
+# match is a case-insensitive regex tested against sender, then subject.
+[[counterparty]]
+name = "Uber"
+match = "uber(?! eats| one)"
+bearer = "JAN"
+category = "travel.taxi"
+notes = "GBP trips during London work days are SquareTrade candidates; EUR trips are personal unless tied to an event."
+
+[[counterparty]]
+name = "Uber Eats"
+match = "uber eats"
+bearer = "JAN"
+category = "personal.food"
+
+[[counterparty]]
+name = "Bolt"
+match = "bolt uk"
+bearer = "JAN"
+category = "travel.taxi"
+
+[[counterparty]]
+name = "Freenow"
+match = "freenow"
+bearer = "JAN"
+category = "travel.taxi"
+
+[[counterparty]]
+name = "Iberia"
+match = "iberia"
+bearer = "FARRELL_IMPORT"
+category = "travel.flight"
+recharge_to = "SQUARETRADE"
+
+[[counterparty]]
+name = "British Airways"
+match = "british airways"
+bearer = "FARRELL_IMPORT"
+category = "travel.flight"
+recharge_to = "SQUARETRADE"
+
+[[counterparty]]
+name = "Ryanair"
+match = "ryanair"
+bearer = "FARRELL_IMPORT"
+category = "travel.flight"
+
+[[counterparty]]
+name = "Kiwi.com"
+match = "kiwi"
+bearer = "JAN"
+category = "travel.flight"
+notes = "August 2026 Caribbean itinerary: personal."
+
+[[counterparty]]
+name = "Great Western Railway"
+match = "great western"
+bearer = "FARRELL_IMPORT"
+category = "travel.rail"
+
+[[counterparty]]
+name = "Soho House"
+match = "soho house|sohohouse|dean street townhouse|kettner|soho farmhouse"
+bearer = "FARRELL_IMPORT"
+category = "travel.hotel"
+recharge_to = "SQUARETRADE"
+notes = "Dean Street Townhouse and Kettner's are hotel folios. £15 Soho House bookings are restaurant deposits: meals, not hotel."
+
+[[counterparty]]
+name = "London hotels (Booking.com)"
+match = "travelodge|georgian house|malmaison|central quality point"
+bearer = "FARRELL_IMPORT"
+category = "travel.hotel"
+recharge_to = "SQUARETRADE"
+
+[[counterparty]]
+name = "Booking.com (other)"
+match = "booking\\.com|al theatro|serenity lodges"
+bearer = "JAN"
+category = "personal.travel"
+notes = "Holiday bookings. London work hotels are matched by name above."
+
+[[counterparty]]
+name = "House of Lords catering"
+match = "lloyd, jane|house of lords|attlee"
+bearer = "BRETHIL"
+category = "events.society"
+recharge_to = "SQUARETRADE"
+notes = "Society evenings. Recharge only under the Kevin Gillan arrangement of 22 Oct 2026, pending Alastair's sign-off."
+
+[[counterparty]]
+name = "Apple"
+match = "apple"
+bearer = "LIBERALIA"
+category = "software"
+
+[[counterparty]]
+name = "Anthropic"
+match = "anthropic"
+bearer = "FARRELL_IMPORT"
+category = "software"
+
+[[counterparty]]
+name = "OpenAI"
+match = "openai"
+bearer = "BRETHIL"
+category = "software"
+
+[[counterparty]]
+name = "GoDaddy"
+match = "godaddy"
+bearer = "LIBERALIA"
+category = "software"
+
+[[counterparty]]
+name = "Pair Networks"
+match = "pair billing"
+bearer = "LIBERALIA"
+category = "software"
+
+[[counterparty]]
+name = "Aire Networks"
+match = "airetech|aire networks"
+bearer = "LIBERALIA"
+category = "telecoms"
+
+[[counterparty]]
+name = "MRW"
+match = "grupomrw|mrw"
+bearer = "LIBERALIA"
+category = "logistics"
+
+[[counterparty]]
+name = "Priegola"
+match = "priegola"
+bearer = "LIBERALIA"
+category = "supplies"
+
+[[counterparty]]
+name = "Notaría Jorge Prades"
+match = "notaria jorge prades|notaría prades"
+bearer = "BRETHIL"
+category = "legal"
+notes = "Invoices split across Brethil, Farrell Import and Fixea. Read the company on the invoice."
+
+[[counterparty]]
+name = "Barnes & Thornburg"
+match = "meade, kay|barnes|b&t invoice"
+bearer = "BRETHIL"
+category = "legal"
+
+[[counterparty]]
+name = "Stevens & Bolton"
+match = "sbllp|stevens & bolton|charlotte tillett"
+bearer = "BRETHIL"
+category = "legal"
+
+[[counterparty]]
+name = "Philip Gardner"
+match = "philip gardner"
+bearer = "BRETHIL"
+category = "legal"
+
+[[counterparty]]
+name = "Buttar Secretarial"
+match = "buttar"
+bearer = "13LTD"
+category = "fees.corporate"
+
+[[counterparty]]
+name = "London Speech Workshop"
+match = "london speech workshop|lsw"
+bearer = "FARRELL_IMPORT"
+category = "training"
+
+[[counterparty]]
+name = "Gemma Johnson"
+match = "gemma johnson"
+bearer = "JAN"
+category = "personal.family"
+
+[[counterparty]]
+name = "Club Amistad de Esquí"
+match = "club amistad"
+bearer = "JAN"
+category = "personal.sport"
+
+[[counterparty]]
+name = "West End Experience"
+match = "west end experience|eventbrite"
+bearer = "JAN"
+category = "personal.family"
+
+[[counterparty]]
+name = "El Corte Inglés"
+match = "el corte ingl"
+bearer = "JAN"
+category = "personal.shopping"
+
+[[counterparty]]
+name = "Amazon"
+match = "amazon"
+bearer = "JAN"
+category = "personal.shopping"
+
+[[counterparty]]
+name = "Brittany Ferries"
+match = "brittany ferries"
+bearer = "JAN"
+category = "personal.travel"
+
+[[counterparty]]
+name = "Caribbean Airlines"
+match = "caribbean airlines"
+bearer = "JAN"
+category = "personal.travel"
+
+[[counterparty]]
+name = "Amer Sports"
+match = "amersports|amer sports"
+bearer = "FARRELL_IMPORT"
+category = "events.telco_ski"
+
+[[counterparty]]
+name = "Green Gold Olive Oil"
+match = "green gold|ggoliveoil"
+bearer = "FARRELL_IMPORT"
+category = "gifts"
+
+[[counterparty]]
+name = "Lemme's"
+match = "lemme"
+bearer = "FARRELL_IMPORT"
+category = "supplies"
+
+[[counterparty]]
+name = "Omotesando Koffee"
+match = "omotesando|taith coffee"
+bearer = "JAN"
+category = "meals"
+
+[[counterparty]]
+name = "Curve"
+match = "curve"
+bearer = "JAN"
+category = "refund"
+
+[[counterparty]]
+name = "Square Trade Limited"
+match = "sangeetha|square ?trade|sqt"
+bearer = "FARRELL_IMPORT"
+category = "income.client"
+
+[[counterparty]]
+name = "Menako Capital"
+match = "menako"
+bearer = "MENAKO"
+category = "income.client"
+
+[[counterparty]]
+name = "Rosa Vilas (Liberalia administration)"
+match = "rosa vilas|soporte centro sf"
+bearer = "LIBERALIA"
+category = "admin"
+notes = "Forwards Liberalia's Amex 75008 statements and Kit Digital paperwork."
+
+[[counterparty]]
+name = "HexClad"
+match = "hexclad"
+bearer = "JAN"
+category = "personal.shopping"
+
+[[counterparty]]
+name = "Fundación Hispano Británica"
+match = "^fhb$|hispanobrit"
+bearer = "JAN"
+category = "personal.culture"
+
+[[counterparty]]
+name = "Triyoga"
+match = "triyoga"
+bearer = "JAN"
+category = "personal.sport"
+
+[[counterparty]]
+name = "Restaurants London"
+match = "poon's|somerset house|lanesborough|opentable|delaunay|dishoom|harwood arms"
+bearer = "JAN"
+category = "meals"
+
+[[counterparty]]
+name = "Royal Collection Trust"
+match = "royal collection"
+bearer = "JAN"
+category = "personal.culture"
+
+[[counterparty]]
+name = "Waylet"
+match = "waylet|elparking"
+bearer = "JAN"
+category = "personal.car"
+
+[[counterparty]]
+name = "Hotel Imperial de Valladolid"
+match = "imperial de valladolid"
+bearer = "FARRELL_IMPORT"
+category = "travel.hotel"
+
+# ---------------------------------------------------------------- rules
+# Lowest priority number runs first. The first rule with set_ignore wins and
+# stops. Otherwise each matching rule fills in fields not yet set.
+
+[[rule]]
+priority = 1
+name = "Internal Liberalia and accountant threads are not money documents"
+match_sender = "laura l[óo]pez|jorge espejo|iratxe plaza|julia ni[ñn]o|vanesa allonca|j\\. farrell - liberalia"
+set_ignore = true
+
+[[rule]]
+priority = 2
+name = "Booking and reservation notices carry no charge"
+match_subject = "reservation (is )?confirmed|your reservation|booking confirmation for|has just been posted|manage your booking|order will be shipping|ordered:|pedido:|entregado|order details|automatic reply|respuesta autom|out of office|one-time password|confirming your|reminder ?:|is out for delivery|shipment from order|your booking is cancelled|payment confirmation$|disponibilidad factura|confirma la actualizaci"
+set_ignore = true
+
+[[rule]]
+priority = 3
+name = "Terms and conditions attachments"
+match_subject = "condiciones del transporte|terms and conditions"
+set_ignore = true
+
+[[rule]]
+priority = 10
+name = "Soho House £15 bookings are restaurant deposits"
+match_sender = "^soho house$"
+match_subject = "booking is confirmed|booking has been updated|booking is cancelled"
+set_category = "meals"
+set_doc_type = "booking"
+
+[[rule]]
+priority = 20
+name = "E-tickets and seat receipts are tickets"
+match_subject = "e-ticket|billete|seats receipt|electronic ticket"
+set_doc_type = "eticket"
+
+[[rule]]
+priority = 21
+name = "Flight booking confirmations: amount lives on the e-ticket, keep as booking"
+match_subject = "booking confirmation [A-Z0-9]{6}|confirmation of booking|booking change confirmation"
+set_doc_type = "booking"
+
+[[rule]]
+priority = 30
+name = "Uber in GBP is London work travel"
+match_sender = "uber receipts"
+match_subject = "trip with uber"
+set_recharge_to = "SQUARETRADE"
+set_bearer = "FARRELL_IMPORT"
+notes = "Classifier applies this only when currency is GBP. EUR trips stay personal."
+
+[[rule]]
+priority = 40
+name = "Company on the document decides the bearer"
+match_entity_on_doc = "Liberalia"
+set_bearer = "LIBERALIA"
+
+[[rule]]
+priority = 41
+name = "Company on the document decides the bearer"
+match_entity_on_doc = "Brethil"
+set_bearer = "BRETHIL"
+
+[[rule]]
+priority = 42
+name = "Company on the document decides the bearer"
+match_entity_on_doc = "Farrell Import"
+set_bearer = "FARRELL_IMPORT"
+
+[[rule]]
+priority = 90
+name = "Credit notes and refunds"
+match_subject = "credit note|refund"
+set_doc_type = "credit_note"
