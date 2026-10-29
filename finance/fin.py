@@ -13,6 +13,7 @@
   fin.py recharge CLIENT START END         recharge schedule, markdown
   fin.py forecast [START] [DAYS]           outgoings and ingoings ahead
   fin.py burn [MONTHS]                     monthly burn by entity and category
+  fin.py invoice N DATE LABEL DAYS FEE START END NAME [--lords]   invoice + annex, html and pdf
   fin.py sql "SELECT ..."                  ad hoc query
 
 Set FIN_DB to use another database file. Default: finance/data/ledger.sqlite
@@ -24,7 +25,7 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lib import db, manifests, statements, rules, fx, plan, reports, manual  # noqa: E402
+from lib import db, manifests, statements, rules, fx, plan, reports, manual, invoice  # noqa: E402
 
 
 def main(argv: list[str]) -> int:
@@ -71,6 +72,31 @@ def main(argv: list[str]) -> int:
         print(reports.forecast(con, start, days))
     elif cmd == "burn":
         print(reports.burn(con, int(args[0]) if args else 4))
+    elif cmd == "invoice":
+        # fin.py invoice NUMBER ISSUE_DATE PERIOD_LABEL DAYS FEE START END OUT_BASENAME [--lords]
+        number, issue, label, days, fee, start, end, out = args[:8]
+        from lib.money import parse_amount
+        fee_minor, _ = parse_amount(fee)
+        extra = []
+        excl = ("HOL-2026-09-10",)
+        if "--lords" in args:
+            lords = sum(r["amount_eur_minor"] or 0 for r in con.execute(
+                "SELECT amount_eur_minor FROM txn WHERE trip_id='HOL-2026-09-10' AND status<>'cancelled' AND recharge_status='candidate'"))
+            extra = [("Events – House of Lords, 10 September 2026 (deposit and pre-payment, Attlee Room)", lords)]
+            excl = ()
+        note = ("GBP amounts converted at 1 EUR = 0.8555 GBP, the rate printed on the Iberia ticket of 28 August 2026, "
+                "pending the EUR amounts on the American Express statement. Receipts available on request.")
+        doc, summary = invoice.render(con, number=int(number), issue_date=date.fromisoformat(issue), period_label=label,
+                                      days=int(days), fee_minor=fee_minor, start=start, end=end,
+                                      extra_lines=extra, trips_exclude=excl, fx_note=note)
+        outp = Path("data/out") / out
+        outp.with_suffix(".html").write_text(doc, encoding="utf-8")
+        try:
+            invoice.to_pdf(outp.with_suffix(".html"), outp.with_suffix(".pdf"))
+            print("pdf:", outp.with_suffix(".pdf"))
+        except Exception as exc:
+            print("pdf failed, html written:", exc)
+        print(summary)
     elif cmd == "sql":
         cur = con.execute(args[0])
         if cur.description:
