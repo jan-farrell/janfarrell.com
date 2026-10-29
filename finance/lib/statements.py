@@ -27,6 +27,19 @@ PROFILES = {
         "sign": "negative_is_debit",   # bank statements show debits negative
         "currency": "EUR",
     },
+    # Curve app export (Account, Statements, export CSV). Funding-card amount is what was charged.
+    "curve": {
+        "date": ["Date (YYYY-MM-DD as UTC)"],
+        "description": ["Merchant"],
+        "amount": ["Txn Amount (Funding Card)"],
+        "currency_col": ["Txn Currency (Funding Card)"],
+        "foreign_amount": ["Txn Amount (Foreign Spend)"],
+        "foreign_currency": ["Txn Currency (Foreign Spend)"],
+        "skip_currencies": ["CPT"],          # Curve Cash points, not money
+        "date_formats": ["%Y-%m-%d"],
+        "sign": "positive_is_debit",
+        "currency": "EUR",
+    },
     # Revolut Business CSV export
     "revolut": {
         "date": ["Date completed (UTC)", "Date started (UTC)", "Completed Date"],
@@ -78,6 +91,12 @@ def import_statement(con: sqlite3.Connection, path: Path, profile: str, account_
                 stats["skipped"] += 1
                 continue
             cur = (_pick(row, p.get("currency_col", [])) or cur or p["currency"]).upper()
+            if cur in p.get("skip_currencies", []):
+                stats["skipped"] += 1
+                continue
+            fa, fc = _pick(row, p.get("foreign_amount", [])), _pick(row, p.get("foreign_currency", []))
+            if fa and fc:
+                desc = f"{desc} [{fa} {fc}]"
             debit = minor > 0 if p["sign"] == "positive_is_debit" else minor < 0
             ref = f"{profile}:{raw_date}:{raw_amt}:{(desc or '')[:40]}"
             if con.execute("SELECT 1 FROM txn WHERE bank_ref=?", (ref,)).fetchone():
