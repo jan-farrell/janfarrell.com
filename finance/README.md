@@ -33,6 +33,8 @@ python3 fin.py forecast 2026-10-27 10
 python3 fin.py burn 4
 ```
 
+`./rebuild.sh 2026-10-27` runs the whole sequence from `data/in/` and writes the five standard reports to `data/out/`.
+
 Python 3.11 or later, standard library only. `FIN_DB=/path/to/ledger.sqlite` overrides the database location.
 
 ## Data model (short)
