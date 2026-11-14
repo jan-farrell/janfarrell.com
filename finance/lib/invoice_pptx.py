@@ -33,7 +33,9 @@ MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agost
           "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 
-def es_amount(minor: int) -> str:
+def es_amount(minor: int | None) -> str:
+    if minor is None:
+        return "pendiente"
     v = abs(minor); s = f"{v // 100:,}".replace(",", ".")
     return f"{'-' if minor < 0 else ''}{s},{v % 100:02d}€"
 
@@ -96,8 +98,9 @@ def build(spec: dict, template: Path, out: Path) -> dict:
     # service lines
     lines = spec["lines"]
     descs = [para(spec["fee_label"], "l"), para(spec["fee_sub"])] + [para(d) for d, _ in lines]
+    approver = spec.get("approver", "Kevin Gillan")
     approve = ('<a:p><a:pPr algn="l"><a:lnSpc><a:spcPts val="1399"/></a:lnSpc></a:pPr><a:r>' + RPR +
-               '<a:t xml:space="preserve">     To be approved by: Kevin Gillan</a:t></a:r></a:p>')
+               f'<a:t xml:space="preserve">     {spec.get("approve_label", "To be approved by")}: {html.escape(approver)}</a:t></a:r></a:p>')
     s.set_body("27", descs + [BLANK, approve])
     amts = [es_amount(m) for _, m in lines]
     s.set_body("44", ['<a:p><a:pPr algn="l"><a:lnSpc><a:spcPts val="1399"/></a:lnSpc></a:pPr>' +
@@ -111,15 +114,31 @@ def build(spec: dict, template: Path, out: Path) -> dict:
     # fee amount boxes
     fee = es_amount(spec["fee"])
     s.x = s.x.replace('<a:t>18.000,00€</a:t>', f'<a:t>{fee}</a:t>')
+    if not spec.get("lines"):
+        for sid in ("44", "45", "46"):
+            s.set_body(sid, [BLANK])
     # push the rule and totals down for every line beyond the template's three visual lines
     extra = max(0, (2 + len(lines)) - 3)
     down = extra * LINE + 40000
     for sid in ("13", "30", "31"):
         s.move(sid, dy=down)
     s.move_group_containing("17", down)
-    total = spec["fee"] + sum(m for _, m in lines)
-    s.replace_text("Subtotal:\t23.921,20€", f"Subtotal:\t{es_amount(total)}")
+    amounts = [spec["fee"]] + [m for _, m in lines]
+    base = None if any(a is None for a in amounts) else sum(amounts)
+    rate = spec.get("vat_rate", 0)
+    vat = None if base is None else round(base * rate / 100)
+    total = None if base is None else base + vat
+    s.replace_text("Subtotal:\t23.921,20€", f"Subtotal:\t{es_amount(base)}")
     s.replace_text("23.921,20€", es_amount(total))
+    if rate:
+        s.replace_text("I.V.A. (0%):                0€", f"I.V.A. ({rate}%):         {es_amount(vat)}")
+    if spec.get("client"):
+        c = spec["client"]
+        s.replace_text("Square Trade Limited", html.escape(c["name"]))
+        s.replace_text("C/o ", html.escape(c["address"]))
+        s.replace_text("Fieldfisher", "")
+        s.replace_text(" 2 Swan Lane, London, EC4R 3TT, UK", "")
+        s.replace_text("V.A.T. number GB 215332445", html.escape(c["tax_id"]))
     p.write_text(s.x, encoding="utf-8")
     out = Path(out)
     if out.exists():
@@ -129,7 +148,7 @@ def build(spec: dict, template: Path, out: Path) -> dict:
             if f.is_file():
                 z.write(f, f.relative_to(tmp).as_posix())
     shutil.rmtree(tmp)
-    return {"number": spec["number"], "fee": spec["fee"], "lines": lines, "total": total}
+    return {"number": spec["number"], "base": base, "vat": vat, "total": total}
 
 
 if __name__ == "__main__":
