@@ -60,6 +60,14 @@ tax_id = "GB 215332445"
 notes = "Client of Farrell Import (monthly fee and expenses, approver Kevin Gillan) and, from October 2026, of Brethil for Society evenings by pre-agreed invoice."
 
 [[entity]]
+code = "ANOVO"
+name = "ANOVO Ibérica Madrid S.L.U."
+kind = "client"
+country = "ES"
+tax_id = "B82479197"
+notes = "Client of Farrell Import from November 2026 (events and training, 21% IVA). Contact José García Martínez."
+
+[[entity]]
 code = "FUNDACION_IE"
 name = "Fundación IE"
 kind = "client"

@@ -28,7 +28,7 @@ BLANK = ('<a:p><a:pPr><a:lnSpc><a:spcPts val="1399"/></a:lnSpc></a:pPr><a:endPar
          '<a:solidFill><a:srgbClr val="475268"/></a:solidFill><a:latin typeface="Glacial Indifference"/>'
          '<a:ea typeface="Glacial Indifference"/><a:cs typeface="Glacial Indifference"/><a:sym typeface="Glacial Indifference"/>'
          '</a:endParaRPr></a:p>')
-LINE = 4746625 - 4582002          # vertical pitch of one service line, EMU
+PITCH = 177673                    # one service line: the template's 13.99pt line spacing, in EMU
 MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto",
           "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
@@ -69,6 +69,14 @@ class Slide:
             new = new.replace('<a:pPr algn="l">', f'<a:pPr algn="{algn}">', 1)
         self.x = self.x.replace(blk, new, 1)
 
+    def right_align(self, sid: str, right_edge: int):
+        blk = self.sp(sid).group(0)
+        m = re.search(r'<a:off x="(\d+)" y="(\d+)"/><a:ext cx="(\d+)" cy="(\d+)"/>', blk)
+        ox, oy, cx, cy = map(int, m.groups())
+        new = blk.replace(m.group(0), f'<a:off x="{right_edge - cx}" y="{oy}"/><a:ext cx="{cx}" cy="{cy}"/>', 1)
+        new = re.sub(r'<a:pPr algn="[a-z]+"', '<a:pPr algn="r"', new, count=1) if '<a:pPr algn=' in new else new.replace('<a:pPr>', '<a:pPr algn="r">', 1)
+        self.x = self.x.replace(blk, new, 1)
+
     def move_group_containing(self, sid: str, dy: int):
         grp = re.search(r'<p:grpSp>(?:(?!</p:grpSp>).)*?<p:cNvPr id="%s" .*?</p:grpSp>' % sid, self.x, re.S)
         if not grp:
@@ -101,14 +109,14 @@ def build(spec: dict, template: Path, out: Path) -> dict:
     approver = spec.get("approver", "Kevin Gillan")
     approve = ('<a:p><a:pPr algn="l"><a:lnSpc><a:spcPts val="1399"/></a:lnSpc></a:pPr><a:r>' + RPR +
                f'<a:t xml:space="preserve">     {spec.get("approve_label", "To be approved by")}: {html.escape(approver)}</a:t></a:r></a:p>')
-    s.set_body("27", descs + [BLANK, approve])
+    s.set_body("27", descs + [BLANK, BLANK, approve])   # two blanks keep the approval line clear of the rule
     amts = [es_amount(m) for _, m in lines]
     s.set_body("44", ['<a:p><a:pPr algn="l"><a:lnSpc><a:spcPts val="1399"/></a:lnSpc></a:pPr>' +
                       BR.join(f'<a:r>{RPR}<a:t>{a}</a:t></a:r>' for a in amts) + '</a:p>'])
     s.set_body("45", [para("1") for _ in amts])
     s.set_body("46", [para(a, "r") for a in amts])
     for sid in ("44", "45", "46"):
-        s.move(sid, dy=LINE)               # one line lower: the fee now takes two paragraphs
+        s.move(sid, dy=PITCH)              # one line lower: the fee now takes two paragraphs
     s.move("28", cx=800000); s.move("44", cx=800000)
     s.move("38", dx=-200000, cx=641626 + 200000, algn="r")
     # fee amount boxes
@@ -117,9 +125,9 @@ def build(spec: dict, template: Path, out: Path) -> dict:
     if not spec.get("lines"):
         for sid in ("44", "45", "46"):
             s.set_body(sid, [BLANK])
-    # push the rule and totals down for every line beyond the template's three visual lines
-    extra = max(0, (2 + len(lines)) - 3)
-    down = extra * LINE + 40000
+    # The template has three description lines. Move the rule and totals by one pitch per line
+    # more or fewer, so the rule always sits between the last line and the approval line.
+    down = ((2 + len(lines)) - 3) * PITCH
     for sid in ("13", "30", "31"):
         s.move(sid, dy=down)
     s.move_group_containing("17", down)
@@ -131,14 +139,26 @@ def build(spec: dict, template: Path, out: Path) -> dict:
     s.replace_text("Subtotal:\t23.921,20€", f"Subtotal:\t{es_amount(base)}")
     s.replace_text("23.921,20€", es_amount(total))
     if rate:
-        s.replace_text("I.V.A. (0%):                0€", f"I.V.A. ({rate}%):         {es_amount(vat)}")
+        s.replace_text("I.V.A. (0%):                0€", f"I.V.A. ({rate}%):   {es_amount(vat)}")
+        s.right_align("31", right_edge=4902606 + 1907549)               # the subtotal box's right edge
     if spec.get("client"):
         c = spec["client"]
         s.replace_text("Square Trade Limited", html.escape(c["name"]))
-        s.replace_text("C/o ", html.escape(c["address"]))
-        s.replace_text("Fieldfisher", "")
-        s.replace_text(" 2 Swan Lane, London, EC4R 3TT, UK", "")
-        s.replace_text("V.A.T. number GB 215332445", html.escape(c["tax_id"]))
+        addr = c.get("address_lines") or [c["address"]]
+        rpr = ('<a:rPr lang="es-ES" sz="1300" dirty="0"><a:solidFill><a:srgbClr val="000000"/></a:solidFill>'
+               '<a:latin typeface="Glacial Indifference"/><a:ea typeface="Glacial Indifference"/>'
+               '<a:cs typeface="Glacial Indifference"/><a:sym typeface="Glacial Indifference"/></a:rPr>')
+        ppr = '<a:pPr algn="l"><a:lnSpc><a:spcPts val="1547"/></a:lnSpc></a:pPr>'
+        rows = [f'<a:p>{ppr}<a:endParaRPr dirty="0"/></a:p>']          # spacer under the client name
+        rows += [f'<a:p>{ppr}<a:r>{rpr}<a:t>{html.escape(t, quote=False)}</a:t></a:r></a:p>' for t in addr + [c["tax_id"]]]
+        s.set_body("22", rows)
+        extra_rows = len(addr) - 1
+        if extra_rows:
+            # Only the first address row shares its line with the date, so later rows may run wider.
+            s.move("22", cx=5800000)
+            half = round(extra_rows * 196469 / 2)                       # 15.47pt line pitch, in EMU
+            for sid in ("19", "20", "21", "22"):
+                s.move(sid, dy=-half)
     p.write_text(s.x, encoding="utf-8")
     out = Path(out)
     if out.exists():
